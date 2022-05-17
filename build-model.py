@@ -18,7 +18,7 @@ class LossAndErrorPrintingCallback(keras_callbacks.Callback):
         print("Validation-Loss={:7.6f}".format(logs["val_loss"]))
         print("Validation-MAE={:7.6f}".format(logs["val_mean_absolute_error"]))
 
-def build_model(n: int, epochs: int, X_train, y_train, X_val, y_val, optimizer: str):
+def build_model(n: int, epochs: int, X_train, y_train, X_val, y_val, learning_rate: float):
     # Now we build a tensorflow model with LSTM
     # the network is not something fancy, it is just a common way to build the model
     # And you can also find a better model online.
@@ -27,6 +27,7 @@ def build_model(n: int, epochs: int, X_train, y_train, X_val, y_val, optimizer: 
     # In this example, we use windows size (n=3), so the input tensor is layers.Input((3, 1)
     
     from tensorflow.keras.models import Sequential
+    from tensorflow.keras.optimizers import Adam
     from tensorflow.keras import layers
     
     model = Sequential([layers.Input((n, 1)),
@@ -35,7 +36,7 @@ def build_model(n: int, epochs: int, X_train, y_train, X_val, y_val, optimizer: 
                         layers.Dense(32, activation='relu'),
                         layers.Dense(1)])
     model.compile(loss='mse',
-                  optimizer=optimizer,
+                  optimizer=Adam(learning_rate=learning_rate),
                   metrics=['mean_absolute_error'],
                   )
     model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=epochs, callbacks=[LossAndErrorPrintingCallback()])
@@ -112,17 +113,17 @@ def run(args):
     dates_train, X_train, y_train = dates[:q_80], X[:q_80], y[:q_80]
     dates_val, X_val, y_val = dates[q_80:q_90], X[q_80:q_90], y[q_80:q_90]
     # dates_test, X_test, y_test = dates[q_90:], X[q_90:], y[q_90:]
-    build_model(args.wsize, args.epochs, X_train, y_train, X_val, y_val,
-            args.optimizer)
+    build_model(args.wsize, args.epochs, X_train, y_train, X_val, y_val, args.learningrate)
 
 if __name__ == '__main__':
     # parse args
     parser = argparse.ArgumentParser(description="stock price estimator with lstm",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--optimizer', type=str, default='adam', dest='optimizer',
-                        help='optimizer: Adadelta/Adagrad/Adam/Adamax/Ftrl/SGD/RMSprop')
+    #parser.add_argument('--optimizer', type=str, default='adam', dest='optimizer',
+    #                    help='optimizer: Adadelta/Adagrad/Adam/Adamax/Ftrl/SGD/RMSprop')
     parser.add_argument('--epochs', type=int, default=100, dest='epochs', help='epoch: number of iterations run')
     parser.add_argument('--lastnyears', type=int, default=1, dest='lastnyears', help='last n years used')
+    parser.add_argument('--learning-rate', type=float, default=0.001, dest='learningrate', help='learning rate (default: 0.001)')
     parser.add_argument('--symbol', type=str, default='MSFT', dest='symbol', help='symbol: ticket, default: MSFT')
     parser.add_argument('--n', type=int, default=3, dest='wsize', help='n: length of windows')
     args = parser.parse_args()
