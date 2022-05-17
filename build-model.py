@@ -2,9 +2,6 @@ import argparse
 import pandas as pd
 import numpy as np
 
-# For plot
-import matplotlib.pyplot as plt
-
 # For reading stock data from yahoo
 from pandas_datareader.data import DataReader
 import yfinance as yf
@@ -16,11 +13,10 @@ from tensorflow.keras import callbacks as keras_callbacks
 class LossAndErrorPrintingCallback(keras_callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
         print("epoch={}".format(epoch))
-        print("logs:", logs)
-        print("Training-Accuracy={:7.6f}".format(logs["accuracy"]))
         print("Training-Loss={:7.6f}".format(logs["loss"]))
-        print("Validation-Accuracy={:7.6f}".format(logs["val_accuracy"]))
+        print("Training-MAE={:7.6f}".format(logs["mean_absolute_error"]))
         print("Validation-Loss={:7.6f}".format(logs["val_loss"]))
+        print("Validation-MAE={:7.6f}".format(logs["val_mean_absolute_error"]))
 
 def build_model(n: int, epochs: int, X_train, y_train, X_val, y_val, optimizer: str):
     # Now we build a tensorflow model with LSTM
@@ -109,7 +105,7 @@ def fetch_data(last_n_year: int, symbol: str):
 def run(args):
     df = fetch_data(args.lastnyears, args.symbol)
     windowed_df = df_to_windowed_df(df, args.wsize)
-    dates, X, Y = windowed_df_to_date_X_y(windowed_df)
+    dates, X, y = windowed_df_to_date_X_y(windowed_df)
     q_80 = int(len(dates) * .8)
     q_90 = int(len(dates) * .9)
     
